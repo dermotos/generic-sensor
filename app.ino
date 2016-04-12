@@ -91,11 +91,11 @@ void connectToCloud(char **values, int valueCount){
 
 
 void setup() {
-    String thisDevice = Spark.deviceID();
+    String thisDevice = Spark.deviceID();re
     String bedsideCoreID = String("51ff6c065067545728090187");
     String bedroomDoorCoreID = String("----");
     String couchCoreID = String("=====");
-    String deskCoreID = String("+++++");
+    String deskCoreID = String("51ff66065067545742400687");
     String kitchenCoreID = String("50ff6b065067545634060287");
     String tvCoreID = String("53ff6a065067544838230187");
     String bathroomID = String("48ff6f065067555033221387");
