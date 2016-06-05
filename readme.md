@@ -22,4 +22,12 @@ Allows building a hardware switch with up to 4 momentary buttons with LED feedba
 This device is designed to connect to a central controller. Checkout the [Central Control Repo](http://github.com/dermotos/central)
 
 
+Finished device
+-------------
+
+![Hardware device](https://raw.githubusercontent.com/dermotos/generic-sensor/master/img/black-device.png)
+
+---
+
+![Hardware device](https://raw.githubusercontent.com/dermotos/generic-sensor/master/img/device-internal.png)
 
