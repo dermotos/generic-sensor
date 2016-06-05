@@ -13,7 +13,7 @@ Schematic
 -------------
 
 
-![Schematic](https://github.com/adam-p/markdown-here/raw/master/src/common/images/icon48.png)
+![Schematic](https://raw.githubusercontent.com/dermotos/generic-sensor/master/hardware%20schematic/Schematic-Generic-Sensor.png)
 
 A custom made blind controller running on a [Particle Photon](https://particle.io) microcontroller.
 
