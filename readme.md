@@ -15,7 +15,7 @@ Schematic
 
 ![Schematic](https://raw.githubusercontent.com/dermotos/generic-sensor/master/hardware%20schematic/Schematic-Generic-Sensor.png)
 
-A custom made blind controller running on a [Particle Photon](https://particle.io) microcontroller.
+A custom made light switch running on a [Particle Photon](https://particle.io) microcontroller.
 
 Allows building a hardware switch with up to 4 momentary buttons with LED feedback, motion sensors and a potentiometer.
 
