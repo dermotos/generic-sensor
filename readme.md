@@ -17,7 +17,9 @@ Schematic
 
 A custom made blind controller running on a [Particle Photon](https://particle.io) microcontroller.
 
-Checkout the [Repo & hardware schematic](http://github.com/dermotos/blind-actor)
+Allows building a hardware switch with up to 4 momentary buttons with LED feedback, motion sensors and a potentiometer.
+
+This device is designed to connect to a central controller. Checkout the [Central Control Repo](http://github.com/dermotos/central)
 
 
 
