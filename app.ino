@@ -3,14 +3,13 @@
 #include "OneButton.h"
 #include "captouch.h"
 
-#define MOTION_TIMEOUT 1000 * 30 // 30 sec
-#define CENTRAL_CONTROL_IP 10,0,0,100
+#define CENTRAL_CONTROL_IP 10,0,0,40
 #define CENTRAL_CONTROL_PORT 9998
 
 SYSTEM_MODE(SEMI_AUTOMATIC);
 
 
-
+int MOTION_TIMEOUT = 30 * 1000; // Defaults to 30 seconds. Programmable via central control.
 //int LED_TEST = D7;
 int BUTTON_NORTH = D4;
 int BUTTON_EAST = D7;
@@ -26,6 +25,8 @@ int POT_PIN = A0;
 int MOTION_PIN_ONE = A1;
 int MOTION_PIN_TWO = A2;
 int MOTION_PIN_THREE = A3;
+
+
 //Disconnect occurs in the sensor when motion is detected (pin three), otherwise it's connected.
 // Therefore, the other wire going to sensor is connected to ground. When there is no motion, this will be closed (NC = normally closed).
 // When motion IS detected, it is disconnected and the pull up resistor pulls it up to HIGH. Hence, it uses an internal pull_up resistor.
@@ -41,7 +42,7 @@ int EXTRA_GND_0 = D0;
 int EXTRA_GND_1 = D1;
 
 //Potentiometer should only report when it has changed by a value greater than 10
-
+bool motionDebugging = false;
 int lastPotReadingValue = 0;
 unsigned long lastPotReadingTime = 0;
 unsigned long potReadingInterval = 100; //Check the pot reading a max of 5 times per second.
@@ -91,14 +92,14 @@ void connectToCloud(char **values, int valueCount){
 
 
 void setup() {
-    String thisDevice = Spark.deviceID();re
-    String bedsideCoreID = String("51ff6c065067545728090187");
-    String bedroomDoorCoreID = String("----");
-    String couchCoreID = String("=====");
-    String deskCoreID = String("51ff66065067545742400687");
-    String kitchenCoreID = String("50ff6b065067545634060287");
-    String tvCoreID = String("53ff6a065067544838230187");
-    String bathroomID = String("48ff6f065067555033221387");
+    String thisDevice = Spark.deviceID();
+    String bedsideCoreID =        String("51ff6c065067545728090187");
+    String bedroomDoorCoreID =    String("48ff6d065067555010282287");
+    String couchCoreID =          String("53ff6a065067544811321287");
+    String deskCoreID =           String("51ff6d065067545744360687");
+    String kitchenCoreID =        String("50ff6b065067545634060287");
+    String tvCoreID =             String("53ff6a065067544838230187");
+    String bathroomID =           String("48ff6f065067555033221387");
 
    // pinMode(LED_TEST,OUTPUT);
     //Bedside: 51ff6c065067545728090187
@@ -119,14 +120,16 @@ void setup() {
     }
     else if(thisDevice == bathroomID){
       deviceIdentifier = "bathroom";
+      MOTION_TIMEOUT = (1000 * 60 * 3); // Longer default timeout in bathroom of 3 minutes
     }
     else if(thisDevice == tvCoreID){
       deviceIdentifier = "tv";
+      checkInInterval = 1000 * 4;
       /* Check in every 4 seconds.
        * The TV device is connected to the TV's USB port. It's sole purpose is to continiously check in when powered up,
        * hence why the frequency is much higher.
        */
-      checkInInterval = 1000 * 4;
+
     }
 
     pinMode(BUTTON_NORTH, INPUT_PULLUP);
@@ -169,6 +172,8 @@ void setup() {
     commandParser.addParser("reset",resetDevice);
     commandParser.addParser("connect-to-cloud",connectToCloud);
     commandParser.addParser("cancel-motion",cancelMotion);
+    commandParser.addParser("motion-timeout",setMotionTimeout);
+    commandParser.addParser("motion-debugging",setMotionDebugging);
 
 
     if(WiFi.ready() == false){
@@ -209,30 +214,39 @@ void cancelMotion(char **values, int valueCount){
 
 
 
-void updateMotion(){
+void updateMotion(int motionSensor){
     bool motionStateChanged = false;
     bool currentMotionState = false;
 
-    currentMotionState = (digitalRead(MOTION_PIN_ONE) || digitalRead(MOTION_PIN_TWO) || digitalRead(MOTION_PIN_THREE));
+    if(motionSensor == 1){
+      currentMotionState = digitalRead(MOTION_PIN_ONE);
+    }
+    else if(motionSensor == 3){
+      currentMotionState = digitalRead(digitalRead(MOTION_PIN_THREE));
+    }
+    //currentMotionState = (digitalRead(MOTION_PIN_ONE) || digitalRead(MOTION_PIN_TWO) || digitalRead(MOTION_PIN_THREE));
 
     /* DEBUGGING MOTION SENSORS */
     /* Lights on buttons are used during debugging to signal the state of motion sensors */
-    digitalWrite(LED_NORTH,digitalRead(MOTION_PIN_THREE));
-    digitalWrite(LED_SOUTH,digitalRead(MOTION_PIN_TWO) || digitalRead(MOTION_PIN_ONE));
-
+    if(motionDebugging){
+      digitalWrite(LED_NORTH,digitalRead(MOTION_PIN_THREE));
+      digitalWrite(LED_SOUTH,digitalRead(MOTION_PIN_TWO) || digitalRead(MOTION_PIN_ONE));
+    }
+    Serial.print("Motion Debugging:");
+    Serial.println(digitalRead((currentMotionState)));
     /* ------------------------ */
 
     if(humanPresent == true && currentMotionState == true){
         //Motion is considered active, and still is, set the motion timeout again:
         nextMotionTimeout = millis() + MOTION_TIMEOUT;
-        //Serial.println("Motion still active. Re-setting timeout.");
+        Serial.println("Motion still active. Re-setting timeout.");
     }
     else if(humanPresent == true && currentMotionState == false){
-        //Serial.println("No recent motion, but still considered active");
+        Serial.println("No recent motion, but still considered active");
         //Motion is considered active, but no recent motion has been detected. This clause here for completeness. The timeout continues to approach...
     }
     else if(humanPresent == false && currentMotionState == true){
-        //Serial.println("New motion detected");
+        Serial.println("New motion detected");
         //There was no motion, but there is now.
         motionStateChanged = true;
         humanPresent = true;
@@ -240,13 +254,13 @@ void updateMotion(){
     }
     else if(humanPresent == false && currentMotionState == false){
         //No movement
-        //Serial.println("No movement");
+        Serial.println("No movement");
     }
 
     //Check has the motion timeout elapsed:
     if(nextMotionTimeout != 0 && nextMotionTimeout < millis())
     {
-        //Serial.println("Motion state has changed");
+        Serial.println("Motion state has changed");
         motionStateChanged = true;
         nextMotionTimeout = 0;
         humanPresent = false; //A timeout has occurred.
@@ -255,9 +269,11 @@ void updateMotion(){
     if(motionStateChanged){
         if(humanPresent){
             sendMessage("motion-started");
+            Serial.println("Motion started");
         }
         else{
             sendMessage("motion-stopped");
+            Serial.println("Motion stopped");
         }
     }
 
@@ -278,6 +294,23 @@ void centralHeartbeat(char **values, int valueCount){
   // A heartbeat command from central was received. If one hasn't been received within 60 seconds, the device will attempt to re-establish
   // TCP connection on next outbound communication attempt. This will occur at most, within 30 seconds, when the next outbound heartbeat occurs.
   centralHeartbeatLastReceived = millis();
+}
+
+
+void setMotionTimeout(char **values, int valueCount){
+    /*
+        Index 0 is the name of the command (in this case, 'set-motion-timeout')
+        Index 1 is the new motion timeout in seconds
+    */
+    String motionTimeout = values[1];
+    int newTimeout = motionTimeout.toInt();
+    MOTION_TIMEOUT = newTimeout;
+}
+
+void setMotionDebugging(char**values,int valueCount){
+  //A call to this should enable motion debugging until next restart. No
+  //need for args.
+  motionDebugging = true;
 }
 
 
@@ -520,11 +553,13 @@ void sendMessage(String message){
 
                   RGB.control(true);
                   RGB.brightness(0);
+                  connectionRetries = 0;
             }
         }
         else{
             //Connection successful
             connectionRetries = 0;
+            Serial.println("Connection established");
         }
     }
     //digitalWrite(LED_TEST,LOW);
@@ -571,7 +606,8 @@ void checkPot(){
           normalized = constrain(map(rawValue, 0, 4095, 0, 105),0,100);
         }
 
-        if(normalized >= 96)
+        //Round off values close to the edges to ensure we get the full range, eg: can access full brightness.
+        if(normalized >= 92)
         {
             normalized = 100;
         }
@@ -694,6 +730,7 @@ void loop() {
     // This method loops forever...
     if(deviceIdentifier == "bathroom"){
       northButton.tick();
+      updateMotion(1);
     }
     else {
       northButton.tick();
@@ -701,7 +738,7 @@ void loop() {
 
 
       if(deviceIdentifier == "kitchen"){
-        updateMotion();
+        updateMotion(3);
       }
       else{
         checkPot();
