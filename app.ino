@@ -9,7 +9,7 @@
 SYSTEM_MODE(SEMI_AUTOMATIC);
 
 
-int MOTION_TIMEOUT = 30 * 1000; // Defaults to 30 seconds. Programmable via central control.
+int MOTION_TIMEOUT = 50 * 1000; // Defaults to 30 seconds. Programmable via central control.
 //int LED_TEST = D7;
 int BUTTON_NORTH = D4;
 int BUTTON_EAST = D7;
@@ -222,7 +222,7 @@ void updateMotion(int motionSensor){
       currentMotionState = digitalRead(MOTION_PIN_ONE);
     }
     else if(motionSensor == 3){
-      currentMotionState = digitalRead(digitalRead(MOTION_PIN_THREE));
+      currentMotionState = digitalRead(MOTION_PIN_THREE);
     }
     //currentMotionState = (digitalRead(MOTION_PIN_ONE) || digitalRead(MOTION_PIN_TWO) || digitalRead(MOTION_PIN_THREE));
 
